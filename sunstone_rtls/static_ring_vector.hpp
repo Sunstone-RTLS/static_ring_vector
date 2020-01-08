@@ -13,36 +13,34 @@ namespace sunstone_rtls {
     template<typename T, std::size_t Capacity>
     class static_ring_vector {
     public:
-        typedef T value_type;
-        typedef T *pointer;
-        typedef T &reference;
-        typedef T const &const_reference;
-        typedef T const *const_pointer;
+        using value_type        = T;
+        using pointer           = T*;
+        using reference         = T&;
+        using const_reference   = T const &;
+        using const_pointer     = T const *;
+        using size_type         = std::size_t;
+        using container_type    = std::array<std::aligned_storage_t<sizeof(T), alignof(T)>, Capacity>;
 
-        typedef std::size_t size_type;
-
-        typedef detail::static_ring_iterator<T      , Capacity> iterator;
-        typedef detail::static_ring_iterator<const T, Capacity> const_iterator;
-
-        typedef std::reverse_iterator<iterator      > reverse_iterator;
-        typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+        using iterator                  = detail::static_ring_iterator<T      , Capacity>;
+        using const_iterator            = detail::static_ring_iterator<const T, Capacity>;
+        using reverse_iterator          = std::reverse_iterator<iterator      >;
+        using const_reverse_iterator    = std::reverse_iterator<const_iterator>;
 
         // construct + assign
-        static_ring_vector() noexcept : m_begin(begin_capacity()), m_size{} {};
+        static_ring_vector() noexcept = default;
 
         template<typename InputIt>
-        static_ring_vector(InputIt begin, InputIt end)
-            : static_ring_vector() {
+        static_ring_vector(InputIt begin, InputIt end, typename std::iterator_traits<InputIt>::iterator_category* = nullptr) noexcept(noexcept(T(*begin))) {
             assign(begin, end);
         }
 
         explicit static_ring_vector(size_type count) noexcept(noexcept(T()))
-                : m_begin(begin_capacity()), m_size{std::min(count, Capacity)}  {
+            : m_size{std::min(count, Capacity)}  {
             std::uninitialized_default_construct_n(m_begin, m_size);
         }
 
         explicit static_ring_vector(size_type count, const_reference value) noexcept(noexcept(T(value)))
-            : m_begin(begin_capacity()), m_size{std::min(count, Capacity)}  {
+            : m_size{std::min(count, Capacity)}  {
             std::uninitialized_fill_n(m_begin, m_size, value);
         }
 
@@ -231,7 +229,7 @@ namespace sunstone_rtls {
                     return *this;
                 }
 
-                It operator++(int) {
+                const It operator++(int) {
                     It cp(*this);
                     ++*this;
                     return cp;
@@ -396,19 +394,19 @@ namespace sunstone_rtls {
         }
 
     private:
-        inline auto begin_capacity() const {
+        inline auto begin_capacity() const noexcept {
             return reinterpret_cast<const_pointer>(rawData.data());
         }
 
-        inline auto begin_capacity() {
+        inline auto begin_capacity() noexcept {
             return reinterpret_cast<pointer>(rawData.data());
         }
 
-        inline auto end_capacity() const {
+        inline auto end_capacity() const noexcept {
             return begin_capacity() + Capacity;
         }
 
-        inline auto end_capacity() {
+        inline auto end_capacity() noexcept {
             return begin_capacity() + Capacity;
         }
 
@@ -597,16 +595,21 @@ namespace sunstone_rtls {
                 push_back(*first);
         }
 
-        std::array<std::aligned_storage_t<sizeof(T), alignof(T)>, Capacity> rawData;
-        pointer m_begin;
+        container_type rawData;
+        pointer m_begin{begin_capacity()};
         size_type m_size{};
     };
 
     namespace detail {
         template<typename T, std::size_t Capacity>
-        class static_ring_iterator : public std::iterator_traits<T*>, public std::tuple<typename std::iterator_traits<T*>::difference_type> {
+        class static_ring_iterator : public std::tuple<typename std::iterator_traits<T*>::difference_type> {
         public:
-            using difference_type = typename std::iterator_traits<T*>::difference_type;
+            using iterator_category = typename std::iterator_traits<T*>::iterator_category;
+            using value_type        = typename std::iterator_traits<T*>::value_type;
+            using difference_type   = typename std::iterator_traits<T*>::difference_type;
+            using pointer           = typename std::iterator_traits<T*>::pointer;
+            using reference         = typename std::iterator_traits<T*>::reference;
+
             static_ring_iterator() = default;
             static_ring_iterator(const static_ring_iterator&) = default;
             static_ring_iterator(static_ring_iterator&&) noexcept = default;
@@ -630,7 +633,7 @@ namespace sunstone_rtls {
                 return *this;
             }
 
-            static_ring_iterator operator++(int) {
+            const static_ring_iterator operator++(int) {
                 static_ring_iterator cp(*this);
                 ++*this;
                 return cp;
@@ -641,7 +644,7 @@ namespace sunstone_rtls {
                 return *this;
             }
 
-            static_ring_iterator operator--(int) {
+            const static_ring_iterator operator--(int) {
                 static_ring_iterator cp(*this);
                 --*this;
                 return cp;
