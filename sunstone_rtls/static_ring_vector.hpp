@@ -44,16 +44,32 @@ namespace sunstone_rtls {
             std::uninitialized_fill_n(m_begin, m_size, value);
         }
 
+        static_ring_vector(const static_ring_vector& other) noexcept(noexcept(T(std::declval<const T&>())))
+            : static_ring_vector(other.begin(), other.end()) {}
+
+        static_ring_vector(static_ring_vector&& other) noexcept(noexcept(T(std::declval<T&&>())))
+            : static_ring_vector(std::make_move_iterator(other.begin()), std::make_move_iterator(other.end())) {}
+
         template<typename U, std::size_t UCapacity>
-        static_ring_vector(const static_ring_vector<U, UCapacity>& other) noexcept(noexcept(T(*other.begin())))
+        explicit static_ring_vector(const static_ring_vector<U, UCapacity>& other) noexcept(noexcept(T(*other.begin())))
             : static_ring_vector(other.begin(), other.end()) {}
 
         template<typename U, std::size_t UCapacity>
-        static_ring_vector(static_ring_vector<U, UCapacity>&& other) noexcept(noexcept(T(std::move(*other.begin()))))
+        explicit static_ring_vector(static_ring_vector<U, UCapacity>&& other) noexcept(noexcept(T(std::move(*other.begin()))))
             : static_ring_vector(std::make_move_iterator(other.begin()), std::make_move_iterator(other.end())) {}
 
         static_ring_vector(std::initializer_list<T> init) noexcept(noexcept(T(std::move(*init.begin()))))
             : static_ring_vector(std::make_move_iterator(init.begin()), std::make_move_iterator(init.end())) {}
+
+        static_ring_vector& operator=(const static_ring_vector& other) noexcept(noexcept(T(*other.begin()))) {
+            assign(other.begin(), other.end());
+            return *this;
+        }
+
+        static_ring_vector& operator=(static_ring_vector&& other) noexcept(noexcept(T(std::move(*other.begin())))) {
+            assign(std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
+            return *this;
+        }
 
         template<typename U, std::size_t UCapacity>
         static_ring_vector& operator=(const static_ring_vector<U, UCapacity>& other) {
@@ -229,7 +245,7 @@ namespace sunstone_rtls {
                     return *this;
                 }
 
-                const It operator++(int) {
+                [[nodiscard]] It operator++(int) & {
                     It cp(*this);
                     ++*this;
                     return cp;
@@ -633,7 +649,7 @@ namespace sunstone_rtls {
                 return *this;
             }
 
-            const static_ring_iterator operator++(int) {
+            [[nodiscard]] static_ring_iterator operator++(int) & {
                 static_ring_iterator cp(*this);
                 ++*this;
                 return cp;
@@ -644,7 +660,7 @@ namespace sunstone_rtls {
                 return *this;
             }
 
-            const static_ring_iterator operator--(int) {
+            [[nodiscard]] static_ring_iterator operator--(int) & {
                 static_ring_iterator cp(*this);
                 --*this;
                 return cp;
@@ -655,20 +671,20 @@ namespace sunstone_rtls {
                 return *this;
             }
 
-            [[nodiscard]] friend static_ring_iterator operator+(static_ring_iterator it, typename static_ring_iterator::difference_type n) {
+            [[nodiscard]] friend inline static_ring_iterator operator+(static_ring_iterator it, typename static_ring_iterator::difference_type n) {
                 return it += n;
             }
 
-            [[nodiscard]] friend static_ring_iterator operator+(typename static_ring_iterator::difference_type n, static_ring_iterator it) {
-                return it += n;
+            [[nodiscard]] friend inline static_ring_iterator operator+(typename static_ring_iterator::difference_type n, const static_ring_iterator& it) {
+                return it + n;
             }
 
-            static_ring_iterator& operator-=(typename static_ring_iterator::difference_type n) {
+            inline static_ring_iterator& operator-=(typename static_ring_iterator::difference_type n) {
                 return *this += -n;
             }
 
-            [[nodiscard]] friend static_ring_iterator operator-(static_ring_iterator it, typename static_ring_iterator::difference_type n) {
-                return it -= n;
+            [[nodiscard]] friend inline static_ring_iterator operator-(const static_ring_iterator& it, typename static_ring_iterator::difference_type n) {
+                return it + -n;
             }
 
             [[nodiscard]] inline typename static_ring_iterator::reference operator[](typename static_ring_iterator::difference_type n) const {
