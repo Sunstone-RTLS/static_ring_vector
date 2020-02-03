@@ -700,7 +700,7 @@ namespace sunstone_rtls {
                     : std::tuple<difference_type>(curr), begin(begin), cap_end(capEnd) {}
 
             template<typename, std::size_t>
-            friend class static_ring_vector;
+            friend class sunstone_rtls::static_ring_vector;
 
             template<typename, std::size_t>
             friend class static_ring_iterator;
