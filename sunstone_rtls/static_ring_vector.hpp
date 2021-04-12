@@ -313,7 +313,7 @@ namespace sunstone_rtls {
 
         iterator erase(const_iterator cfrom, const_iterator cto) {
             iterator from = make_non_const(cfrom), to = make_non_const(cto);
-            if (const auto countToEnd = m_size - to.index(), countFromBegin = from.index(); !countToEnd || !countFromBegin) {
+            if (const std::ptrdiff_t countToEnd = m_size - to.index(), countFromBegin = from.index(); !countToEnd || !countFromBegin) {
                 std::destroy(from, to);
                 if (countToEnd)
                     m_begin = to.ptr();
